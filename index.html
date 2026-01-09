@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loja do Leozinho</title>
+  <style>
+    :root {
+      --bg-body: #f4f4f4;
+      --bg-skeleton: #e2e8f0;
+      --shimmer-color: rgba(56, 189, 248, 0.2);
+    }
+
+    /* --- ESTILOS DO CARREGAMENTO AZUL (SKELETON) --- */
+    #skeleton-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      z-index: 10000;
+      transition: opacity 0.5s ease, visibility 0.5s;
+    }
+
+    .sk-header {
+      height: 80px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .sk-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      padding: 40px;
+    }
+
+    .sk-item {
+      background: var(--bg-skeleton);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+      height: 300px;
+    }
+
+    .sk-item::after {
+      content: "";
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      transform: translateX(-100%);
+      background: linear-gradient(90deg, transparent, var(--shimmer-color), transparent);
+      animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes shimmer {
+      100% { transform: translateX(100%); }
+    }
+
+    .sk-title { width: 300px; height: 40px; border-radius: 8px; background: var(--bg-skeleton); margin: 20px auto; }
+    .sk-search { width: 80%; max-width: 500px; height: 45px; border-radius: 8px; background: var(--bg-skeleton); margin: 0 auto 20px auto; }
+
+    .hidden-skeleton { opacity: 0; visibility: hidden; pointer-events: none; }
+
+    /* --- SEU CSS ORIGINAL --- */
+    body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+    h1 { text-align: center; color: #333; }
+    .busca-container { max-width: 500px; margin: 0 auto 20px auto; text-align: center; }
+    .busca { width: 100%; padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; padding: 20px; }
+    
+    .produto {
+      background-color: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 10px;
+      text-align: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); opacity: 0;
+      transform: translateY(30px); animation: aparecer 0.6s ease forwards; cursor: pointer; transition: transform 0.3s;
+    }
+    .produto:hover { transform: translateY(-5px); }
+    @keyframes aparecer { to { opacity: 1; transform: translateY(0); } }
+
+    /* Animação em cascata */
+    .produto:nth-child(n) { animation-delay: calc(0.1s * var(--i)); }
+
+    .produto img { max-width: 100%; height: 160px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; }
+    .produto h2 { font-size: 18px; margin: 10px 0; }
+    .preco { font-weight: bold; font-size: 16px; margin: 10px 0; color: #008000; }
+    .botao { display: inline-block; padding: 10px 15px; background-color: #3483fa; color: white; border: none; border-radius: 5px; text-decoration: none; font-weight: bold; cursor: pointer; }
+    
+    /* Popup Styles */
+    .popup { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); justify-content: center; align-items: center; z-index: 999; opacity: 0; transform: scale(0.8); transition: all 0.3s ease; }
+    .popup.active { display: flex; opacity: 1; transform: scale(1); }
+    .popup-content { background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; position: relative; max-height: 90vh; overflow-y: auto; }
+    .popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .close-popup { font-size: 24px; cursor: pointer; color: #999; }
+    .popup-image-container { display: flex; justify-content: center; background-color: #f8f8f8; border-radius: 10px; padding: 15px; }
+    .popup-image { max-width: 100%; max-height: 250px; object-fit: contain; }
+    .popup-price { font-size: 22px; font-weight: bold; color: #008000; margin: 15px 0; }
+    .popup-buy-btn { padding: 12px 25px; background-color: #3483fa; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; }
+  </style>
+</head>
+<body>
+
+  <div id="skeleton-screen">
+    <div class="sk-title sk-item"></div>
+    <div class="sk-search sk-item"></div>
+    <div class="sk-grid">
+      <div class="sk-item"></div>
+      <div class="sk-item"></div>
+      <div class="sk-item"></div>
+      <div class="sk-item"></div>
+      <div class="sk-item"></div>
+      <div class="sk-item"></div>
+    </div>
+  </div>
+
+  <h1>🛍️ Loja do Leozinho</h1>
+
+  <div class="busca-container">
+    <input type="text" class="busca" id="campoBusca" placeholder="🔎 Buscar produtos..." oninput="filtrarProdutos()">
+  </div>
+
+  <div class="grid" id="produtos"></div>
+
+  <div class="popup" id="productPopup">
+    <div class="popup-content">
+      <div class="popup-header">
+        <div class="popup-title" id="popupProductName" style="font-size: 24px; font-weight: bold;"></div>
+        <div class="close-popup" onclick="fecharPopup()">×</div>
+      </div>
+      <div class="popup-image-container">
+        <img class="popup-image" id="popupProductImage" src="">
+      </div>
+      <div class="popup-price" id="popupProductPrice"></div>
+      <div id="popupProductDescription" style="margin-bottom: 20px; color: #555;"></div>
+      <button class="popup-buy-btn" id="popupBuyBtn">Comprar Agora</button>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 40px;">
+    <a href="https://sites.google.com/view/sitesdolleonardo/inicio" target="_blank" style="display: inline-block; padding: 12px 20px; background-color: #333; color: white; border-radius: 8px; text-decoration: none; font-weight: bold;">
+      🌐 Ver todos os sites do lleonardo
+    </a>
+  </div>
+
+  <script>
+    const produtos = [
+      { nome: "Gerador de QR Code", preco: "R$ 9,99", imagem: "https://cdn.dfg.com.br/itemimages/903417728-gerador-de-qr-code-CLV2.webp", link: "https://3d1b0923.sibforms.com/serve/MUIFAMhS2PlddPPclL_T-ZswUAroqZV0MRonM8BNbAfzlqUkX2AEOJN17bQRdBvjatfU0mtQSdLhzKiXsFPPna7wmMjMpQnXjzJpp1xmv2TuL0ES7WCJBtGmQputCEcNDPgxkUs9k4TAkIZc4uVCN9yQJAO35X28pGrOujFjxF1wvBc5IQrT_g7WBECedCi114BXVo5LtFfOscQj", descricao: "Gerador de QR Code prático e fácil de usar." },
+      { nome: "Pack de Edição", preco: "R$ 5,00", imagem: "https://cdn.dfg.com.br/itemimages/903439299-pack-de-edicao-JTJE.webp", link: "https://3d1b0923.sibforms.com/serve/MUIFAMhS2PlddPPclL_T-ZswUAroqZV0MRonM8BNbAfzlqUkX2AEOJN17bQRdBvjatfU0mtQSdLhzKiXsFPPna7wmMjMpQnXjzJpp1xmv2TuL0ES7WCJBtGmQputCEcNDPgxkUs9k4TAkIZc4uVCN9yQJAO35X28pGrOujFjxF1wvBc5IQrT_g7WBECedCi114BXVo5LtFfOscQj", descricao: "Pack com efeitos e transições profissionais." },
+      { nome: "Planilha: Lista de Endereços", preco: "R$ 5,00", imagem: "https://cdn.dfg.com.br/itemimages/908287345-lista-de-enderecos-e-telefones-VIRP.webp", link: "https://3d1b0923.sibforms.com/serve/MUIFAMhS2PlddPPclL_T-ZswUAroqZV0MRonM8BNbAfzlqUkX2AEOJN17bQRdBvjatfU0mtQSdLhzKiXsFPPna7wmMjMpQnXjzJpp1xmv2TuL0ES7WCJBtGmQputCEcNDPgxkUs9k4TAkIZc4uVCN9yQJAO35X28pGrOujFjxF1wvBc5IQrT_g7WBECedCi114BXVo5LtFfOscQj", descricao: "Organize seus contatos de forma eficiente." },
+      { nome: "Calculadora Simples", preco: "R$ 2,50", imagem: "https://imgs.search.brave.com/9MVOu-hiWJABW-FVIe80ZKIv5RHcH5XTBDgk7m2Fojk/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly90NC5m/dGNkbi5uZXQvanBn/LzAzLzQ1LzM2LzEx/LzM2MF9GXzM0NTM2/MTExNF9oSW41VlFJ/VzRSNUY3MG5yaW5Z/OXRVM1lNOXpFWHk4/NS5qcGc", link: "https://3d1b0923.sibforms.com/serve/MUIFADBX8FNIWTuz7aKf-BSo7kGOCmY6_S3Ma75zzyc_epYrEWhEnF546hRuGX0FevgQ8Fh0PKtb8_2s_hfNI4vImBR_jNX6SpITazFNQJgxzkEhMcugjbdZDBKwZbrogYQDm-Q6giljmfgJDhU1SEAO5ZGWOKlQzpiNZ2foMK0vPMEZS-U_ioGT4RoovoEyxZJl1mFiFJsfTc6c", descricao: "Calculadora executável para Windows (+, -, *, /)" }
+      // ... Adicione os outros produtos aqui se desejar
+    ];
+
+    const container = document.getElementById("produtos");
+    const skeleton = document.getElementById("skeleton-screen");
+
+    // --- LÓGICA DO CARREGAMENTO ---
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        skeleton.classList.add('hidden-skeleton');
+      }, 1500); // Exibe por 1.5 segundos
+    });
+
+    function renderizarProdutos(lista) {
+      container.innerHTML = "";
+      lista.forEach((produto, index) => {
+        const card = document.createElement("div");
+        card.className = "produto";
+        card.style.setProperty('--i', index + 1);
+        card.innerHTML = `
+          <img src="${produto.imagem}" alt="${produto.nome}" onerror="this.src='https://via.placeholder.com/250x160'">
+          <h2>${produto.nome}</h2>
+          <p class="preco">${produto.preco}</p>
+          <button class="botao" onclick="mostrarDetalhesProduto('${produto.nome}')">Comprar</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function mostrarDetalhesProduto(nome) {
+      const p = produtos.find(item => item.nome === nome);
+      if(!p) return;
+      document.getElementById("popupProductName").textContent = p.nome;
+      document.getElementById("popupProductPrice").textContent = p.preco;
+      document.getElementById("popupProductDescription").textContent = p.descricao;
+      document.getElementById("popupProductImage").src = p.imagem;
+      document.getElementById("popupBuyBtn").onclick = () => window.open(p.link, '_blank');
+      document.getElementById("productPopup").classList.add("active");
+    }
+
+    function fecharPopup() {
+      document.getElementById("productPopup").classList.remove("active");
+    }
+
+    function filtrarProdutos() {
+      const busca = document.getElementById("campoBusca").value.toLowerCase();
+      const filtrados = produtos.filter(p => p.nome.toLowerCase().includes(busca));
+      renderizarProdutos(filtrados);
+    }
+
+    renderizarProdutos(produtos);
+  </script>
+</body>
+</html>
